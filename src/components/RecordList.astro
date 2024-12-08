@@ -1,0 +1,142 @@
+---
+---
+
+<div id="record-list">
+  <h2>Records</h2>
+  <ul></ul>
+</div>
+  
+<div id="record-details" style="display: none;">
+  <h3>Record Details</h3>
+  <div id="full-content"></div>
+  <button id="close-details">Close</button>
+</div>
+  
+<script>
+  import { getRecords, getRecordDetails, getUserPermission, deleteRecord, getCsrfToken } from '../scripts/api.js';
+
+  const recordList = document.querySelector('#record-list ul');
+  const recordDetails = document.getElementById('record-details');
+  const fullContent = document.getElementById('full-content');
+  const closeDetailsButton = document.getElementById('close-details');
+
+  async function updateRecordList() {
+    try {
+      const records = await getRecords();
+      const { permissionLevel } = await getUserPermission();
+      const isAdmin = permissionLevel === 'admin';
+
+      recordList.innerHTML = records.map(record => `
+  <li data-id="${record.id}">
+    <strong>Event Time:</strong> ${record.event_time}<br>
+    <strong>Source:</strong> ${record.source}<br>
+    <strong>Summary:</strong> ${record.summary}<br>
+    <strong>Location:</strong> ${record.location}<br>
+    <strong>Privacy Importance:</strong> ${record.privacy_importance}<br>
+    ${record.file_path ? `<a href="/files/${encodeURIComponent(record.file_path)}?folder=${encodeURIComponent(record.file_path.split('/')[0])}" download>Download File</a>` : ''}
+    <button class="view-details">View Details</button>
+    ${isAdmin ? `
+      <button class="edit-record">Edit</button>
+      <button class="delete-record">Delete</button>
+    ` : ''}
+  </li>
+`).join('');
+
+
+      attachEventListeners();
+    } catch (error) {
+      recordList.innerHTML = '<li>Failed to fetch records</li>';
+    }
+  }
+  
+  function attachEventListeners() {
+    document.querySelectorAll('.view-details').forEach(button => {
+      button.addEventListener('click', viewDetails);
+    });
+
+    document.querySelectorAll('.edit-record').forEach(button => {
+      button.addEventListener('click', editRecord);
+    });
+  
+    document.querySelectorAll('.delete-record').forEach(button => {
+      button.addEventListener('click', deleteRecordHandler);
+    });
+  }
+  
+  async function viewDetails(e) {
+  const recordId = e.target.closest('li').dataset.id;
+  try {
+    const record = await getRecordDetails(recordId);
+
+    // HTML content for the new window
+    const popupContent = `
+      <html>
+        <head>
+          <title>Record Details</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h3 { margin-top: 0; }
+            a { color: blue; text-decoration: underline; }
+          </style>
+        </head>
+        <body>
+          <h3>Record Details</h3>
+          <p><strong>Event Time:</strong> ${record.event_time}</p>
+          <p><strong>Source:</strong> ${record.source}</p>
+          <p><strong>Full Content:</strong> ${record.full_content}</p>
+          <p><strong>File Path:</strong> ${
+            record.file_path
+              ? `<a href="/files/${encodeURIComponent(record.file_path.split('/').pop())}" download>Download File</a>`
+              : 'N/A'
+          }</p>
+          <p><strong>Location:</strong> ${record.location}</p>
+          <p><strong>Privacy Importance:</strong> ${record.privacy_importance}</p>
+          <button onclick="window.close()">Close</button>
+        </body>
+      </html>
+    `;
+
+    // Open a new popup window for each record
+    const popupWindow = window.open(
+      '',
+      `RecordDetails-${recordId}`,
+      'width=600,height=400,scrollbars=yes'
+    );
+    if (popupWindow) {
+      popupWindow.document.write(popupContent);
+      popupWindow.document.close(); // Ensure the content is fully written
+    } else {
+      alert('Popup blocked! Please allow popups for this site.');
+    }
+  } catch (error) {
+    alert('Failed to fetch record details: ' + error.message);
+  }
+}
+
+
+  function editRecord(e) {
+    const recordId = e.target.closest('li').dataset.id;
+    // Implement edit functionality or redirect to edit page
+    alert('Edit functionality not implemented yet. Record ID: ' + recordId);
+  }
+  
+  async function deleteRecordHandler(e) {
+    const recordId = e.target.closest('li').dataset.id;
+    if (confirm('Are you sure you want to delete this record?')) {
+      try {
+        const csrfToken = await getCsrfToken();
+        await deleteRecord(recordId, csrfToken);
+        updateRecordList();
+      } catch (error) {
+        alert('Failed to delete record: ' + error.message);
+      }
+    }
+  }
+  
+  closeDetailsButton.addEventListener('click', () => {
+    recordDetails.style.display = 'none';
+  });
+  
+  updateRecordList();
+  window.addEventListener('recordsUpdated', updateRecordList);
+</script>

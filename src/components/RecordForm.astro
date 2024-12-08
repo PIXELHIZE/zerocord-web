@@ -1,0 +1,67 @@
+<form id="record-form" enctype="multipart/form-data">
+	<input type="datetime-local" name="event_time" required>
+	<input type="text" name="source" placeholder="Source" required>
+	<textarea name="summary" placeholder="Summary" required></textarea>
+	<textarea name="full_content" placeholder="Full Content" required></textarea>
+	<input type="file" name="file">
+	<input type="text" name="location" placeholder="Location">
+	<select name="privacy_importance" required id="privacy-importance-select">
+	  <option value="">Select Privacy Importance</option>
+	</select>
+	<button type="submit">Submit Record</button>
+  </form>
+<script>
+import { uploadRecord, getCsrfToken, getUserPermission } from '../scripts/api.js';
+
+async function initializeForm() {
+  const { permissionLevel } = await getUserPermission();
+  const select = document.getElementById('privacy-importance-select');
+
+  // Clear existing options
+  select.innerHTML = '<option value="">Select Privacy Importance</option>';
+
+  // Add options based on user's permission level
+  if (permissionLevel === 0) {
+    // 권한이 0인 경우 0부터 5까지 모두 보여줌
+    for (let i = 0; i <= 5; i++) {
+      const option = document.createElement('option');
+      option.value = i.toString();
+      option.textContent = i.toString();
+      select.appendChild(option);
+    }
+  } else {
+    // 그 외의 권한은 1부터 5까지만 보여줌
+    for (let i = 1; i <= 5; i++) {
+      const option = document.createElement('option');
+      option.value = i.toString();
+      option.textContent = i.toString();
+      select.appendChild(option);
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initializeForm);
+
+document.getElementById('record-form')?.addEventListener('submit', async (e: SubmitEvent) => {
+  e.preventDefault();
+  const form = e.target as HTMLFormElement;
+  const formData = new FormData(form);
+  const record = Object.fromEntries(formData);
+
+  try {
+    const { permissionLevel } = await getUserPermission();
+
+    if (permissionLevel >= 0) {  // 모든 사용자가 업로드할 수 있도록 유지
+      const csrfToken = await getCsrfToken();
+      await uploadRecord(record, csrfToken);
+      alert('Record uploaded successfully');
+      form.reset();
+      window.dispatchEvent(new Event('recordsUpdated'));
+    } else {
+      alert('You do not have permission to upload a record.');
+    }
+  } catch (error) {
+    alert('Failed to upload record: ' + (error as Error).message);
+  }
+});
+</script>

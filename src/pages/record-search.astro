@@ -1,0 +1,29 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import SearchForm from '../components/SearchForm.astro';
+import RecordList from '../components/RecordList.astro';
+---
+
+<Layout title="Search Records - Memory Keeper">
+	<Header />
+	<main>
+		<h1>Search Records</h1>
+		<section>
+			<SearchForm />
+		</section>
+	</main>
+</Layout>
+
+<script>
+	import { checkAuth } from '../scripts/api.js';
+
+	async function init() {
+		const isLoggedIn = await checkAuth();
+		if (!isLoggedIn) {
+			window.location.href = '/login';
+		}
+	}
+
+	init();
+</script>

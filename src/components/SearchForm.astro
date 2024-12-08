@@ -1,0 +1,137 @@
+<form id="search-form">
+	<input type="text" name="keyword" placeholder="Search keyword">
+	<select name="searchType">
+	  <option value="content">Content</option>
+	  <option value="source">Source</option>
+	  <option value="location">Location</option>
+	</select>
+	<input type="datetime-local" name="startDate" placeholder="Start Date">
+	<input type="datetime-local" name="endDate" placeholder="End Date">
+	<select name="privacyImportance">
+	  <option value="">Any Privacy Importance</option>
+	  <option value="0">0</option>
+	  <option value="1">1</option>
+	  <option value="2">2</option>
+	  <option value="3">3</option>
+	  <option value="4">4</option>
+	  <option value="5">5</option>
+	</select>
+	<button type="submit">Search</button>
+  </form>
+	
+  <div id="search-results"></div> <!-- 이 부분 추가 -->
+  <div id="record-details" style="display: none;"></div> <!-- 이 부분 추가 -->
+	
+  <script>
+	import { searchRecords, getRecordDetails, downloadFile } from '../scripts/api.js'; // Add getRecordDetails here
+	
+	document.getElementById('search-form').addEventListener('submit', async (e) => {
+	  e.preventDefault();
+	  const form = e.target as HTMLFormElement; // Type assertion to HTMLFormElement
+	  const formData = new FormData(form);
+	  const searchParams = Object.fromEntries(formData);
+  
+	  try {
+		const records = await searchRecords(searchParams);
+		displaySearchResults(records);
+	  } catch (error) {
+		alert('Search failed: ' + error.message);
+	  }
+	});
+	
+	function displaySearchResults(records) {
+	  const resultsDiv = document.getElementById('search-results');
+	  if (records.length === 0) {
+		resultsDiv.innerHTML = '<p>No records found.</p>';
+		return;
+	  }
+	
+	  const recordsList = records.map(record => `
+		<li data-id="${record.id}">
+		  <strong>Event Time:</strong> ${record.event_time}<br>
+		  <strong>Source:</strong> ${record.source}<br>
+		  <strong>Summary:</strong> ${record.summary}<br>
+		  <strong>Location:</strong> ${record.location}<br>
+		  <strong>Privacy Importance:</strong> ${record.privacy_importance}<br>
+		  ${record.file_path ? `<a href="/files/${encodeURIComponent(record.file_path)}" download>Download File</a>` : ''}
+		  <button class="view-details">View Details</button>
+		</li>
+	  `).join('');
+	
+	  resultsDiv.innerHTML = `<ul>${recordsList}</ul>`;
+	  attachViewDetailsListeners();
+	}
+	
+	function attachViewDetailsListeners() {
+	  document.querySelectorAll('.view-details').forEach(button => {
+		button.addEventListener('click', viewDetails);
+	  });
+	  document.querySelectorAll('.download-file').forEach(button => {
+  button.addEventListener('click', async (e) => {
+    if (e.target instanceof HTMLElement && 'fileKey' in e.target.dataset) {
+      const fileKey = e.target.dataset.fileKey;
+      try {
+        await downloadFile(fileKey);
+      } catch (error) {
+        alert('Failed to download file: ' + (error instanceof Error ? error.message : String(error)));
+      }
+    }
+  });
+});
+	}
+	
+	async function viewDetails(e) {
+  const recordId = (e.target as HTMLElement).closest('li').dataset.id;
+  try {
+    const record = await getRecordDetails(recordId);
+    openRecordInPopup(record);
+  } catch (error) {
+    alert('Failed to fetch record details: ' + error.message);
+  }
+}
+
+function openRecordInPopup(record) {
+  // HTML content for the new window
+  const popupContent = `
+    <html>
+      <head>
+        <title>Record Details</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h3 { margin-top: 0; }
+          a { color: blue; text-decoration: underline; }
+        </style>
+      </head>
+      <body>
+        <h3>Record Details</h3>
+        <p><strong>Event Time:</strong> ${record.event_time}</p>
+        <p><strong>Source:</strong> ${record.source}</p>
+        <p><strong>Full Content:</strong> ${record.full_content}</p>
+        <p><strong>File Path:</strong> ${
+          record.file_path
+            ? `<button class="download-file" data-file-key="${record.file_path}">Download File</button>`
+            : 'N/A'
+        }</p>
+        <p><strong>Location:</strong> ${record.location}</p>
+        <p><strong>Privacy Importance:</strong> ${record.privacy_importance}</p>
+        <button onclick="window.close()">Close</button>
+      </body>
+    </html>
+  `;
+
+  // Open a new popup window for the record details
+  const popupWindow = window.open(
+    '',
+    `RecordDetails-${record.id}`,
+    'width=600,height=400,scrollbars=yes'
+  );
+  if (popupWindow) {
+    popupWindow.document.write(popupContent);
+    popupWindow.document.close(); // Ensure the content is fully written
+  } else {
+    alert('Popup blocked! Please allow popups for this site.');
+  }
+}
+
+  </script>
+  

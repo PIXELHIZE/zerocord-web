@@ -1,0 +1,141 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+---
+
+<Layout title="Account Management - Admin Only">
+	<Header />
+	<main>
+		<h1>Account Management</h1>
+		<section>
+			<h2>Create New Account</h2>
+			<form id="create-account-form">
+				<input type="text" name="username" placeholder="Username" required />
+				<input type="password" name="password" placeholder="Password" required />
+				<select name="permission" required>
+					<option value="">Select Permission Level</option>
+					<option value="0">0 - Admin</option>
+					<option value="1">1</option>
+					<option value="2">2</option>
+					<option value="3">3</option>
+					<option value="4">4</option>
+					<option value="5">5 - User</option>
+				</select>
+				<button type="submit">Create Account</button>
+			</form>
+		</section>
+		<section>
+			<h2>Manage Accounts</h2>
+			<div id="account-list"></div>
+		</section>
+	</main>
+</Layout>
+
+<script>
+	import { checkAuth } from '../scripts/api.js';
+
+	async function init() {
+		const isLoggedIn = await checkAuth();
+		if (!isLoggedIn) {
+			window.location.href = '/login';
+		}
+	}
+
+	init();
+</script>
+
+<script>
+	import { createAccount, getAccounts, deleteAccount, updateAccountPermission, resetPassword } from '../scripts/api.js';
+
+async function handleDelete(username) {
+    if (confirm('Are you sure you want to delete this account?')) {
+        try {
+            await deleteAccount(username);
+            alert('Account deleted successfully');
+            loadAccounts();
+        } catch (error) {
+            alert('Failed to delete account: ' + error.message);
+        }
+    }
+}
+
+async function handleResetPassword(username) {
+    const newPassword = prompt('Enter a new password:');
+    if (newPassword) {
+        try {
+            await resetPassword(username, newPassword);
+            alert('Password reset successfully');
+        } catch (error) {
+            alert('Failed to reset password: ' + error.message);
+        }
+    }
+}
+
+async function handleUpdatePermission(username) {
+    const newPermission = prompt('Enter new permission level (0-5):');
+    if (newPermission !== null) {
+        try {
+            await updateAccountPermission(username, parseInt(newPermission));
+            alert('Permission updated successfully');
+            loadAccounts();
+        } catch (error) {
+            alert('Failed to update permission: ' + error.message);
+        }
+    }
+}
+
+async function loadAccounts() {
+    const accountListDiv = document.getElementById('account-list');
+    try {
+        const accounts = await getAccounts();
+        accountListDiv.innerHTML = accounts.map(account => `
+            <div class="account-item" data-username="${account.username}">
+                <p><strong>Username:</strong> ${account.username}</p>
+                <p><strong>Permission Level:</strong> ${account.permission_level}</p>
+                <button class="delete-btn">Delete</button>
+                <button class="reset-password-btn">Reset Password</button>
+                <button class="update-permission-btn">Update Permission</button>
+            </div>
+        `).join('');
+    } catch (error) {
+        accountListDiv.innerHTML = '<p>Failed to load accounts</p>';
+    }
+}
+
+// Event delegation
+document.getElementById('account-list').addEventListener('click', async (e) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'BUTTON') {
+        const accountItem = target.closest('.account-item') as HTMLElement;
+        const username = accountItem.dataset.username;
+
+        if (target.classList.contains('delete-btn')) {
+            await handleDelete(username);
+        } else if (target.classList.contains('reset-password-btn')) {
+            await handleResetPassword(username);
+        } else if (target.classList.contains('update-permission-btn')) {
+            await handleUpdatePermission(username);
+        }
+    }
+});
+
+document.getElementById('create-account-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const username = formData.get('username') as string;
+    const password = formData.get('password') as string;
+    const permission = formData.get('permission') as string;
+
+    try {
+        await createAccount({ username, password, permission });
+        alert('Account created successfully');
+        form.reset();
+        loadAccounts();
+    } catch (error) {
+        alert('Failed to create account: ' + (error as Error).message);
+    }
+});
+
+loadAccounts();
+</script>

@@ -1,0 +1,29 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import RecordList from '../components/RecordList.astro';
+---
+
+<Layout title="Dashboard - Memory Keeper">
+	<Header />
+	<main>
+		<h1>Dashboard</h1>
+		<section>
+			<h2>All Records</h2>
+			<RecordList />
+		</section>
+	</main>
+</Layout>
+
+<script>
+	import { checkAuth } from '../scripts/api.js';
+
+	async function init() {
+		const isLoggedIn = await checkAuth();
+		if (!isLoggedIn) {
+			window.location.href = '/login';
+		}
+	}
+
+	init();
+</script>

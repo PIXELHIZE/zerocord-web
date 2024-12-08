@@ -1,0 +1,28 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import RecordForm from '../components/RecordForm.astro';
+---
+
+<Layout title="Upload Record - Memory Keeper">
+	<Header />
+	<main>
+		<h1>Upload New Record</h1>
+		<section>
+			<RecordForm />
+		</section>
+	</main>
+</Layout>
+
+<script>
+	import { checkAuth } from '../scripts/api.js';
+
+	async function init() {
+		const isLoggedIn = await checkAuth();
+		if (!isLoggedIn) {
+			window.location.href = '/login';
+		}
+	}
+
+	init();
+</script>

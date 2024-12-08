@@ -1,0 +1,21 @@
+---
+---
+
+<header>
+	<nav>
+		<a href="/">Home</a>
+		<a href="/dashboard">Dashboard</a>
+		<a href="/record-search">record-search</a>
+		<a href="/record-upload">record-upload</a>
+		<button id="logout">Logout</button>
+	</nav>
+</header>
+
+<script>
+	import { logout } from '../scripts/api.js';
+
+	document.getElementById('logout').addEventListener('click', async () => {
+		await logout();
+		window.location.href = '/';
+	});
+</script>
