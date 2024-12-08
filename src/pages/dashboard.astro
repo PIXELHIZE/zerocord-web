@@ -16,8 +16,12 @@ import RecordList from '../components/RecordList.astro';
 </Layout>
 
 <script>
-	import { checkAuth } from '../scripts/api.js';
+	console.log('Hi! I’m the client. This is logged in browser dev console.');
+</script>
 
+<script>
+	import { checkAuth } from '../scripts/api.js';
+	console.log("방문함")
 	async function init() {
 		const isLoggedIn = await checkAuth();
 		if (!isLoggedIn) {

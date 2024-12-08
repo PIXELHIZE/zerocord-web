@@ -1,3 +1,5 @@
+
+
 <form id="search-form">
 	<input type="text" name="keyword" placeholder="Search keyword">
 	<select name="searchType">
@@ -40,27 +42,49 @@
 	});
 	
 	function displaySearchResults(records) {
-	  const resultsDiv = document.getElementById('search-results');
-	  if (records.length === 0) {
-		resultsDiv.innerHTML = '<p>No records found.</p>';
-		return;
-	  }
-	
-	  const recordsList = records.map(record => `
-		<li data-id="${record.id}">
-		  <strong>Event Time:</strong> ${record.event_time}<br>
-		  <strong>Source:</strong> ${record.source}<br>
-		  <strong>Summary:</strong> ${record.summary}<br>
-		  <strong>Location:</strong> ${record.location}<br>
-		  <strong>Privacy Importance:</strong> ${record.privacy_importance}<br>
-		  ${record.file_path ? `<a href="/files/${encodeURIComponent(record.file_path)}" download>Download File</a>` : ''}
-		  <button class="view-details">View Details</button>
-		</li>
-	  `).join('');
-	
-	  resultsDiv.innerHTML = `<ul>${recordsList}</ul>`;
-	  attachViewDetailsListeners();
-	}
+  const resultsDiv = document.getElementById('search-results');
+  if (records.length === 0) {
+    resultsDiv.innerHTML = '<p>No records found.</p>';
+    return;
+  }
+
+  const recordsList = records.map(record => `
+    <li data-id="${record.id}">
+      <strong>Event Time:</strong> ${record.event_time}<br>
+      <strong>Source:</strong> ${record.source}<br>
+      <strong>Summary:</strong> ${record.summary}<br>
+      <strong>Location:</strong> ${record.location}<br>
+      <strong>Privacy Importance:</strong> ${record.privacy_importance}<br>
+      ${
+        record.file_path
+          ? `<button class="download-file" data-file-key="${record.file_path}">Download File</button>`
+          : ''
+      }
+      <button class="view-details">View Details</button>
+    </li>
+  `).join('');
+
+  resultsDiv.innerHTML = `<ul>${recordsList}</ul>`;
+  attachViewDetailsListeners();
+  attachDownloadListeners(); // 다운로드 버튼에 리스너 추가
+}
+
+function attachDownloadListeners() {
+  document.querySelectorAll('.download-file').forEach(button => {
+    button.addEventListener('click', async (e) => {
+      if (e.target instanceof HTMLElement && 'fileKey' in e.target.dataset) {
+        const fileKey = e.target.dataset.fileKey;
+        try {
+          await downloadFile(fileKey);
+        } catch (error) {
+          alert('Failed to download file: ' + (error instanceof Error ? error.message : String(error)));
+        }
+      }
+    });
+  });
+}
+
+
 	
 	function attachViewDetailsListeners() {
 	  document.querySelectorAll('.view-details').forEach(button => {
@@ -89,6 +113,8 @@
     alert('Failed to fetch record details: ' + error.message);
   }
 }
+
+
 
 function openRecordInPopup(record) {
   // HTML content for the new window
@@ -132,6 +158,7 @@ function openRecordInPopup(record) {
     alert('Popup blocked! Please allow popups for this site.');
   }
 }
+
 
   </script>
   

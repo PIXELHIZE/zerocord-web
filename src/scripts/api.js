@@ -69,25 +69,44 @@ export async function uploadRecord(record, csrfToken) {
   
 
 export async function downloadFile(fileKey) {
-	const response = await fetch(`${API_URL}/files/${encodeURIComponent(fileKey)}`, {
-	  method: 'GET',
-	  credentials: 'include',
-	});
+	// Explicitly use the backend server URL (API_URL)
+	const url = `localhost:3000/files/${encodeURIComponent(fileKey)}`;
+	console.log('Requesting file from URL:', url); // Debugging log
   
-	if (!response.ok) {
-	  throw new Error('Failed to download file');
+	try {
+	  const response = await fetch(url, { 
+		method: 'GET', 
+		credentials: 'include', 
+	  });
+  
+	  if (!response.ok) {
+		console.error('Failed to download file:', response.status, response.statusText);
+		throw new Error(`Failed to download file: ${response.statusText}`);
+	  }
+  
+	  const blob = await response.blob();
+	  const downloadUrl = window.URL.createObjectURL(blob);
+	  const a = document.createElement('a');
+	  a.style.display = 'none';
+	  a.href = downloadUrl;
+	  
+	  // Safely extract the filename, handling different path formats
+	  const filename = fileKey.split(/[/\\]/).pop() || 'downloaded-file';
+	  a.download = filename;
+	  
+	  document.body.appendChild(a);
+	  a.click();
+	  
+	  // Clean up
+	  document.body.removeChild(a);
+	  window.URL.revokeObjectURL(downloadUrl);
+	} catch (error) {
+	  console.error('Download error:', error);
+	  throw error;
 	}
+  }
   
-	const blob = await response.blob();
-	const url = window.URL.createObjectURL(blob);
-	const a = document.createElement('a');
-	a.style.display = 'none';
-	a.href = url;
-	a.download = fileKey.split('/').pop(); // 파일 이름 추출
-	document.body.appendChild(a);
-	a.click();
-	window.URL.revokeObjectURL(url);
-}
+  
 
 export async function deleteRecord(id, csrfToken) {
 	const response = await fetch(`${API_URL}/records/${id}`, {
