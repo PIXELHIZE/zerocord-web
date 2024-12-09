@@ -70,18 +70,21 @@ export async function uploadRecord(record, csrfToken) {
 
 export async function downloadFile(fileKey) {
 	// Explicitly use the backend server URL (API_URL)
-	const url = `localhost:3000/files/${encodeURIComponent(fileKey)}`;
+	const url = `${API_URL}/files/${encodeURIComponent(fileKey)}`;
 	console.log('Requesting file from URL:', url); // Debugging log
   
 	try {
 	  const response = await fetch(url, { 
 		method: 'GET', 
 		credentials: 'include', 
+		headers: {
+			"Content-Type": 'application/octet-stream'
+		}
 	  });
   
 	  if (!response.ok) {
 		console.error('Failed to download file:', response.status, response.statusText);
-		throw new Error(`Failed to download file: ${response.statusText}`);
+		throw new Error(`Failed to download file: ${response.statusText} / HTTP error! status: ${response.status}`);
 	  }
   
 	  const blob = await response.blob();
