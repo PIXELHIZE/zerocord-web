@@ -86,7 +86,7 @@
           <p><strong>Full Content:</strong> ${record.full_content}</p>
           <p><strong>File Path:</strong> ${
             record.file_path
-              ? `<a href="/files/${encodeURIComponent(record.file_path.split('/').pop())}" download>Download File</a>`
+              ? `<a href="localhost:3000/files/${encodeURIComponent(record.file_path.split('/').pop())}" download>Download File</a>`
               : 'N/A'
           }</p>
           <p><strong>Location:</strong> ${record.location}</p>

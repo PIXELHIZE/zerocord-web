@@ -133,12 +133,27 @@ export async function getRecords() {
 }
 
 export async function getRecordDetails(id) {
-	const response = await fetch(`${API_URL}/records/${id}`, {
-	  credentials: 'include'
-	});
-	if (!response.ok) throw new Error('Failed to fetch record details');
-	return response.json();
-}
+	try {
+	  const response = await fetch(`${API_URL}/records/${id}`, {
+		credentials: 'include',
+		method: 'GET'
+	  });
+  
+	  if (!response.ok) {
+		// 더 자세한 에러 정보 얻기
+		const errorData = await response.json().catch(() => null);
+		throw new Error(
+		  errorData?.error || 
+		  `HTTP error! status: ${response.status}, statusText: ${response.statusText}`
+		);
+	  }
+	  
+	  return response.json();
+	} catch (error) {
+	  console.error('Detailed fetch error:', error);
+	  throw error;
+	}
+  }
 
 // 로그인 여부 확인
 export async function checkAuth() {

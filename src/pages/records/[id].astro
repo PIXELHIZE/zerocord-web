@@ -1,0 +1,116 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getRecordDetails } from '../../scripts/api.js';
+
+export const prerender = false;
+
+// 레코드 인터페이스 정의
+interface Record {
+  id: string;
+  event_time: string;
+  source: string;
+  full_content: string;
+  location: string;
+  privacy_importance: number;
+  file_path?: string;
+}
+
+// 오류 타입 정의
+interface ApiError {
+  message: string;
+}
+
+// 타입 가드 함수
+function isError(error: unknown): error is Error {
+  return error instanceof Error;
+}
+
+const { id } = Astro.params;
+
+let record: Record | null = null;
+let error: unknown = null;
+
+try {
+  if (id) {
+    record = await getRecordDetails(id);
+  }
+} catch (err) {
+  error = err;
+}
+---
+
+<Layout title={error ? 'Error' : `Record ${id} Details`}>
+  <div class="container mx-auto p-4">
+    {error ? (
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error: </strong>
+        <span class="block sm:inline">
+          {isError(error) ? error.message : 'Unknown error occurred.'}
+        </span>
+      </div>
+    ) : record ? (
+      <div class="bg-white shadow-md rounded-lg p-6">
+        <h1 class="text-2xl font-bold mb-4">Record Details</h1>
+        <p><strong>Event Time:</String> {record.event_time}</p>
+        <p><strong>Source:</strong> {record.source}</p>
+        <p><strong>Full Content:</strong> {record.full_content}</p>
+        <p><strong>Location:</strong> {record.location}</p>
+        <p><strong>Privacy Importance:</strong> {record.privacy_importance}</p>
+        
+        {record.file_path && (
+          <button 
+            id="download-file-btn" 
+            data-file-key={record.file_path}
+            class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Download File
+          </button>
+        )}
+      </div>
+    ) : (
+      <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">
+        <strong class="font-bold">Notice: </strong>
+        <span class="block sm:inline">No record found for the given ID.</span>
+      </div>
+    )}
+  </div>
+
+  {record?.file_path && (
+    <script define:vars={{ fileKey: record.file_path }}>
+      document.getElementById('download-file-btn')?.addEventListener('click', async () => {
+        const API_URL = 'http://localhost:3000';
+        try {
+          const response = await fetch(`${API_URL}/files/${encodeURIComponent(fileKey)}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              "Content-Type": 'application/octet-stream'
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to download file: ${response.statusText}`);
+          }
+
+          const blob = await response.blob();
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = downloadUrl;
+          
+          const filename = fileKey.split(/[/\\]/).pop() || 'downloaded-file';
+          a.download = filename;
+          
+          document.body.appendChild(a);
+          a.click();
+          
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(downloadUrl);
+        } catch (error) {
+          console.error('Download error:', error);
+          alert(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      });
+    </script>
+  )}
+</Layout>
