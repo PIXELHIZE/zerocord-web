@@ -134,26 +134,52 @@ export async function getRecords() {
 
 export async function getRecordDetails(id) {
 	try {
+	  console.log(`Fetching record details for ID: ${id}`);
+	  
 	  const response = await fetch(`${API_URL}/records/${id}`, {
 		credentials: 'include',
-		method: 'GET'
+		method: 'GET',
+		headers: {
+		  'Accept': 'application/json'
+		}
 	  });
   
+	  console.log('Response status:', response.status);
+  
 	  if (!response.ok) {
-		// 더 자세한 에러 정보 얻기
-		const errorData = await response.json().catch(() => null);
-		throw new Error(
-		  errorData?.error || 
-		  `HTTP error! status: ${response.status}, statusText: ${response.statusText}`
-		);
+		const errorText = await response.text();
+		console.error('Record details fetch error:', {
+		  status: response.status,
+		  statusText: response.statusText,
+		  errorText
+		});
+  
+		// 명확한 에러 메시지 처리
+		if (response.status === 404) {
+		  throw new Error('Record not found');
+		} else if (response.status === 403) {
+		  throw new Error('Insufficient permissions to view this record');
+		} else {
+		  throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+		}
 	  }
 	  
-	  return response.json();
+	  const data = await response.json();
+	  console.log('Record details fetched successfully:', data);
+	  return data;
 	} catch (error) {
 	  console.error('Detailed fetch error:', error);
 	  throw error;
 	}
-  }
+}
+
+export async function getRecordDetailsWithAuth(id) {
+	const isLoggedIn = await checkAuth();
+	if (!isLoggedIn) {
+		throw new Error('Unauthorized. Please log in.');
+		return getRecordDetails(id);
+	}
+}
 
 // 로그인 여부 확인
 export async function checkAuth() {
@@ -230,4 +256,32 @@ export async function updateAccountPermission(username, permission) {
 		method: 'POST',
 		body: JSON.stringify({ username, permission }),
 	});
+}
+
+// api.js 파일에 추가
+export async function getRecordDetailsWithAutoLogin(id, username, password) {
+    try {
+        // 먼저 기록 상세 정보 가져오기 시도
+        return await getRecordDetails(id);
+    } catch (error) {
+        // 401 Unauthorized 오류인 경우 로그인 시도
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+            try {
+                // CSRF 토큰 먼저 가져오기
+                const csrfToken = await getCsrfToken();
+                
+                // 로그인 시도
+                await login(username, password, csrfToken);
+                
+                // 로그인 후 다시 기록 상세 정보 가져오기
+                return await getRecordDetails(id);
+            } catch (loginError) {
+                console.error('Auto-login failed:', loginError);
+                throw new Error('Failed to auto-login and fetch record details');
+            }
+        }
+        
+        // 다른 종류의 오류는 그대로 throw
+        throw error;
+    }
 }

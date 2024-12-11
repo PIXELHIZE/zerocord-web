@@ -4,7 +4,6 @@ import { getRecordDetails } from '../../scripts/api.js';
 
 export const prerender = false;
 
-// 레코드 인터페이스 정의
 interface Record {
   id: string;
   event_time: string;
@@ -15,12 +14,10 @@ interface Record {
   file_path?: string;
 }
 
-// 오류 타입 정의
 interface ApiError {
   message: string;
 }
 
-// 타입 가드 함수
 function isError(error: unknown): error is Error {
   return error instanceof Error;
 }
@@ -32,9 +29,17 @@ let error: unknown = null;
 
 try {
   if (id) {
+    // 추가: 로깅 및 디버깅 정보
+    console.log('Fetching record details for ID:', id);
+    
     record = await getRecordDetails(id);
+    
+    // 추가: 성공 로깅
+    console.log('Record details fetched successfully:', record);
   }
 } catch (err) {
+  // 추가: 에러 로깅
+  console.error('Error fetching record details:', err);
   error = err;
 }
 ---
@@ -51,7 +56,7 @@ try {
     ) : record ? (
       <div class="bg-white shadow-md rounded-lg p-6">
         <h1 class="text-2xl font-bold mb-4">Record Details</h1>
-        <p><strong>Event Time:</String> {record.event_time}</p>
+        <p><strong>Event Time:</strong> {record.event_time}</p>
         <p><strong>Source:</strong> {record.source}</p>
         <p><strong>Full Content:</strong> {record.full_content}</p>
         <p><strong>Location:</strong> {record.location}</p>
@@ -76,20 +81,24 @@ try {
   </div>
 
   {record?.file_path && (
-    <script define:vars={{ fileKey: record.file_path }}>
+    <script define:vars={{ 
+      fileKey: record.file_path, 
+      API_URL: import.meta.env.API_URL || 'http://localhost:3000' 
+    }}>
       document.getElementById('download-file-btn')?.addEventListener('click', async () => {
-        const API_URL = 'http://localhost:3000';
         try {
           const response = await fetch(`${API_URL}/files/${encodeURIComponent(fileKey)}`, {
             method: 'GET',
-            credentials: 'include',
+            credentials: 'include', // 세션 쿠키 포함
             headers: {
               "Content-Type": 'application/octet-stream'
             }
           });
 
           if (!response.ok) {
-            throw new Error(`Failed to download file: ${response.statusText}`);
+            // 추가: 자세한 에러 정보
+            const errorText = await response.text();
+            throw new Error(`Failed to download file: ${response.statusText} - ${errorText}`);
           }
 
           const blob = await response.blob();
