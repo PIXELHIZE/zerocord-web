@@ -103,7 +103,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 // 세션 설정
 app.use(session({
-  secret: 'secret', // 임시
+  secret: 'nFN=RdG%Ke$xsYZ)W,B7aPA+Z._DiKU1;7g9D6i,$f6tvDd+0U', // 임시
   resave: false,
   saveUninitialized: false,
   cookie: {
