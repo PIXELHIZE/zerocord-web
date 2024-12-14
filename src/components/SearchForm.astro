@@ -69,15 +69,16 @@
   }
 
   function attachEventListeners() {
-    // Attach listeners for download buttons
-    document.querySelectorAll('.view-details').forEach(button => {
+  // Attach listeners for 'View Details' buttons
+  document.querySelectorAll('.view-details').forEach(button => {
     button.addEventListener('click', (e) => {
       const recordId = (e.target as HTMLElement).closest('li').dataset.id;
-      // Navigate to the records page with the specific record ID
-      window.location.href = `/records/${recordId}`;
+      // Open the records page in a new tab
+      window.open(`/records/${recordId}`, '_blank');
     });
   });
-  }
+}
+
 
   async function viewDetails(e) {
     const recordId = (e.target as HTMLElement).closest('li').dataset.id;

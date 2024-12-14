@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { getRecordDetails } from '../../scripts/api.js';
+import { getRecordDetails, downloadFile } from '../../scripts/api.js';
 
 export const prerender = false;
 
@@ -29,16 +29,13 @@ let error: unknown = null;
 
 try {
   if (id) {
-    // 추가: 로깅 및 디버깅 정보
     console.log('Fetching record details for ID:', id);
     
     record = await getRecordDetails(id);
     
-    // 추가: 성공 로깅
     console.log('Record details fetched successfully:', record);
   }
 } catch (err) {
-  // 추가: 에러 로깅
   console.error('Error fetching record details:', err);
   error = err;
 }
@@ -81,42 +78,12 @@ try {
   </div>
 
   {record?.file_path && (
-    <script define:vars={{ 
-      fileKey: record.file_path, 
-      API_URL: import.meta.env.API_URL || 'http://localhost:3000' 
-    }}>
+    <script define:vars={{ fileKey: record.file_path }}>
       document.getElementById('download-file-btn')?.addEventListener('click', async () => {
         try {
-          const response = await fetch(`${API_URL}/files/${encodeURIComponent(fileKey)}`, {
-            method: 'GET',
-            credentials: 'include', // 세션 쿠키 포함
-            headers: {
-              "Content-Type": 'application/octet-stream'
-            }
-          });
-
-          if (!response.ok) {
-            // 추가: 자세한 에러 정보
-            const errorText = await response.text();
-            throw new Error(`Failed to download file: ${response.statusText} - ${errorText}`);
-          }
-
-          const blob = await response.blob();
-          const downloadUrl = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.style.display = 'none';
-          a.href = downloadUrl;
-          
-          const filename = fileKey.split(/[/\\]/).pop() || 'downloaded-file';
-          a.download = filename;
-          
-          document.body.appendChild(a);
-          a.click();
-          
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(downloadUrl);
+          await downloadFile(fileKey);
         } catch (error) {
-          console.error('Download error:', error);
+          console.error('Dsownload error:', error);
           alert(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       });
