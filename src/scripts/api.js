@@ -143,6 +143,10 @@ export async function getRecordDetails(id) {
 		  'Accept': 'application/json'
 		}
 	  });
+
+	  for (let [key, value] of response.headers.entries()) {
+		console.log(`${key}: ${value}`);
+	  }
   
 	  console.log('Response status:', response.status);
   
@@ -258,7 +262,6 @@ export async function updateAccountPermission(username, permission) {
 	});
 }
 
-// api.js 파일에 추가
 export async function getRecordDetailsWithAutoLogin(id, username, password) {
     try {
         // 먼저 기록 상세 정보 가져오기 시도
