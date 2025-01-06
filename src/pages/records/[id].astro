@@ -1,93 +1,134 @@
 ---
-//[id].astro
-import Layout from '../../layouts/Layout.astro';
-import { getRecordDetails, downloadFile } from '../../scripts/api.js';
-
-export const prerender = false;
-
-interface Record {
-  id: string;
-  event_time: string;
-  source: string;
-  full_content: string;
-  location: string;
-  privacy_importance: number;
-  file_path?: string;
-}
-
-interface ApiError {
-  message: string;
-}
-
-function isError(error: unknown): error is Error {
-  return error instanceof Error;
-}
+import { getRecordDetails } from '../../scripts/api.js';
 
 const { id } = Astro.params;
-
-let record: Record | null = null;
-let error: unknown = null;
+let record;
 
 try {
-  if (id) {
-    console.log('Fetching record details for ID:', id);
-    
-    record = await getRecordDetails(id);
-    
-    console.log('Record details fetched successfully:', record);
-  }
-} catch (err) {
-  console.error('Error fetching record details:', err);
-  error = err;
+  record = await getRecordDetails(id);
+} catch (error) {
+  return Astro.redirect('/404');
 }
 ---
 
-<Layout title={error ? 'Error' : `Record ${id} Details`}>
-  <div class="container mx-auto p-4">
-    {error ? (
-      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-        <strong class="font-bold">Error: </strong>
-        <span class="block sm:inline">
-          {isError(error) ? error.message : 'Unknown error occurred.'}
-        </span>
+<html>
+  <head>
+    <title>Record Details - {record.source}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .record-container {
+        background: #f9f9f9;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .detail-row {
+        margin: 10px 0;
+      }
+      .detail-label {
+        font-weight: bold;
+        color: #333;
+      }
+      .file-download {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-top: 10px;
+      }
+      .file-download:hover {
+        background: #0056b3;
+      }
+      .back-button {
+        display: inline-block;
+        background: #6c757d;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-top: 20px;
+      }
+      .back-button:hover {
+        background: #5a6268;
+      }
+      .privacy-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="record-container">
+      <h1>Record Details</h1>
+      
+      <div class="detail-row">
+        <span class="detail-label">Event Time:</span>
+        <span>{record.event_time}</span>
       </div>
-    ) : record ? (
-      <div class="bg-white shadow-md rounded-lg p-6">
-        <h1 class="text-2xl font-bold mb-4">Record Details</h1>
-        <p><strong>Event Time:</strong> {record.event_time}</p>
-        <p><strong>Source:</strong> {record.source}</p>
-        <p><strong>Full Content:</strong> {record.full_content}</p>
-        <p><strong>Location:</strong> {record.location}</p>
-        <p><strong>Privacy Importance:</strong> {record.privacy_importance}</p>
-        
-        {record.file_path && (
-          <button 
-            id="download-file-btn" 
-            data-file-key={record.file_path}
-            class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+
+      <div class="detail-row">
+        <span class="detail-label">Source:</span>
+        <span>{record.source}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">Summary:</span>
+        <span>{record.summary}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">Full Content:</span>
+        <p>{record.full_content}</p>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">Location:</span>
+        <span>{record.location}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">Privacy Importance:</span>
+        <span class="privacy-badge">{record.privacy_importance}</span>
+      </div>
+
+      {record.file_path && (
+        <div class="detail-row">
+          <span class="detail-label">Attached File:</span>
+          <a 
+            href={`/files/${encodeURIComponent(record.file_path)}?folder=${encodeURIComponent(record.file_path.split('/')[0])}`}
+            class="file-download" 
+            download
           >
             Download File
-          </button>
-        )}
-      </div>
-    ) : (
-      <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">
-        <strong class="font-bold">Notice: </strong>
-        <span class="block sm:inline">No record found for the given ID.</span>
-      </div>
-    )}
-  </div>
+          </a>
+        </div>
+      )}
+    </div>
 
-  {record?.file_path && (
-    <script define:vars={{ fileKey: record.file_path }}>
-      document.getElementById('download-file-btn')?.addEventListener('click', async () => {
-        try {
-          await downloadFile(fileKey);
-        } catch (error) {
-          console.error('Dsownload error:', error);
-          alert(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    <a href="/records" class="back-button">Back to Records</a>
+
+    <script>
+      // Handle any client-side interactions if needed
+      document.addEventListener('DOMContentLoaded', () => {
+        const fileDownload = document.querySelector('.file-download');
+        if (fileDownload) {
+          fileDownload.addEventListener('click', async (e) => {
+            // Add any additional download handling logic if needed
+          });
         }
       });
     </script>
-  )}
-</Layout>
+  </body>
+</html>

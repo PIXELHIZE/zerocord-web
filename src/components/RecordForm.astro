@@ -17,10 +17,8 @@ async function initializeForm() {
   const { permissionLevel } = await getUserPermission();
   const select = document.getElementById('privacy-importance-select');
 
-  // Clear existing options
   select.innerHTML = '<option value="">Select Privacy Importance</option>';
 
-  // Add options based on user's permission level
   if (permissionLevel === 0) {
     // 권한이 0인 경우 0부터 5까지 모두 보여줌
     for (let i = 0; i <= 5; i++) {
