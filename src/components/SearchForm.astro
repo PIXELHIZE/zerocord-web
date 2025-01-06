@@ -23,8 +23,8 @@
 	<button type="submit">Search</button>
   </form>
 	
-  <div id="search-results"></div> <!-- 이 부분 추가 -->
-  <div id="record-details" style="display: none;"></div> <!-- 이 부분 추가 -->
+  <div id="search-results"></div> 
+  <div id="record-details" style="display: none;"></div> 
 	
 <script>
   import { searchRecords, getRecordDetails, downloadFile } from '../scripts/api.js';
@@ -71,11 +71,9 @@
   }
 
   function attachEventListeners() {
-  // Attach listeners for 'View Details' buttons
   document.querySelectorAll('.view-details').forEach(button => {
     button.addEventListener('click', (e) => {
       const recordId = (e.target as HTMLElement).closest('li').dataset.id;
-      // Open the records page in a new tab
       window.open(`/records/${recordId}`, '_blank');
     });
   });
@@ -110,7 +108,6 @@
       <button onclick="hideDetails()">Close</button>
     `;
 
-    // Attach download listener for the file in the details section
     const downloadButton = detailsDiv.querySelector('.download-file');
     if (downloadButton) {
       downloadButton.addEventListener('click', async (e) => {
@@ -129,6 +126,6 @@
   function hideDetails() {
     const detailsDiv = document.getElementById('record-details');
     detailsDiv.style.display = 'none';
-    detailsDiv.innerHTML = ''; // Clear the content
+    detailsDiv.innerHTML = '';
   }
 </script>
